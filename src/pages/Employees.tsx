@@ -136,7 +136,7 @@ export default function Employees() {
                 <td>{row.is_critical_role ? <span className="tag warn">是</span> : '否'}</td>
                 <td>{row.is_media_contact ? <span className="tag blue">是</span> : '否'}</td>
                 <td><span className="tag">{row.status}</span></td>
-                <td><button className="btn secondary sm" onClick={() => openEdit(row)}>编辑</button></td>
+                <td><Perm code="btn.employees.edit"><button className="btn secondary sm" onClick={() => openEdit(row)}>编辑</button></Perm></td>
               </tr>
             ))}
           </tbody>

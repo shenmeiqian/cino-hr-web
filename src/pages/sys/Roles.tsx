@@ -21,6 +21,13 @@ function collectIds(nodes: PermNode[], acc: number[] = []): number[] {
   return acc
 }
 
+function typeLabel(type: string) {
+  if (type === 'menu') return '菜单'
+  if (type === 'button') return '按钮'
+  if (type === 'api') return 'API'
+  return type
+}
+
 function PermTreeCheck({
   nodes,
   checked,
@@ -38,6 +45,7 @@ function PermTreeCheck({
         const childIds = collectIds(n.children || [])
         const allKids = childIds.length > 0 && childIds.every((id) => checked.has(id))
         const someKids = childIds.some((id) => checked.has(id))
+        const prefix = typeLabel(n.type)
         return (
           <li key={n.id}>
             <label className="checkbox">
@@ -49,8 +57,11 @@ function PermTreeCheck({
                 }}
                 onChange={() => onToggle(n.id, [n.id, ...childIds])}
               />
-              <span className={`tag ${n.type === 'menu' ? 'blue' : n.type === 'button' ? 'ok' : 'warn'}`}>{n.type}</span>
-              {n.name} <code>{n.code}</code>
+              <span className={`tag ${n.type === 'menu' ? 'blue' : n.type === 'button' ? 'ok' : 'warn'}`}>{prefix}</span>
+              <span>
+                {n.type === 'menu' ? `${n.name}` : n.name}{' '}
+                <code>({n.code})</code>
+              </span>
             </label>
             {n.children?.length ? (
               <PermTreeCheck nodes={n.children} checked={checked} onToggle={onToggle} depth={depth + 1} />
@@ -146,7 +157,9 @@ export default function SysRoles() {
             </Perm>
           </div>
           <h2>角色列表</h2>
-          <p className="muted" style={{ fontSize: 12 }}>勾选权限树 → 保存（全量替换）→ 用户挂角色</p>
+          <p className="muted" style={{ fontSize: 12 }}>
+            权限树为 <strong>菜单 → 按钮/API</strong> 嵌套；勾选后保存（全量替换）→ 用户挂角色
+          </p>
           {roles.map((r) => (
             <button
               key={r.id}
@@ -166,6 +179,9 @@ export default function SysRoles() {
               <button className="btn" onClick={save} disabled={!selected}>保存权限分配</button>
             </Perm>
           </div>
+          <p className="muted" style={{ fontSize: 12 }}>
+            示例：菜单: 员工花名册 (menu.employees) → □ 新建 (btn.employees.create) / □ 编辑 (btn.employees.edit)
+          </p>
           <PermTreeCheck nodes={tree} checked={checked} onToggle={onToggle} />
         </div>
       </div>

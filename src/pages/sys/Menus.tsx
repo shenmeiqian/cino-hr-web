@@ -3,6 +3,9 @@ import { api, getErrorMessage } from '../../api/client'
 import { Perm } from '../../components/Perm'
 import type { MenuNode } from '../../components/Layout'
 
+type ButtonPerm = { code: string; name: string }
+type MenuNodeExt = MenuNode & { button_perms?: ButtonPerm[]; children?: MenuNodeExt[] }
+
 type FlatMenu = {
   id: number
   parent_id?: number | null
@@ -12,9 +15,10 @@ type FlatMenu = {
   sort_order: number
   permission_code: string
   visible: boolean
+  button_perms?: ButtonPerm[]
 }
 
-function flatten(nodes: MenuNode[], acc: FlatMenu[] = []): FlatMenu[] {
+function flatten(nodes: MenuNodeExt[], acc: FlatMenu[] = []): FlatMenu[] {
   for (const n of nodes) {
     acc.push({
       id: n.id,
@@ -25,6 +29,7 @@ function flatten(nodes: MenuNode[], acc: FlatMenu[] = []): FlatMenu[] {
       sort_order: n.sort_order,
       permission_code: n.permission_code,
       visible: n.visible,
+      button_perms: n.button_perms || [],
     })
     if (n.children?.length) flatten(n.children, acc)
   }
@@ -37,7 +42,7 @@ function TreeRows({
   onEdit,
   onDelete,
 }: {
-  nodes: MenuNode[]
+  nodes: MenuNodeExt[]
   depth: number
   onEdit: (m: FlatMenu) => void
   onDelete: (id: number) => void
@@ -53,6 +58,19 @@ function TreeRows({
             </td>
             <td>{n.path || '（分组）'}</td>
             <td><code>{n.permission_code}</code></td>
+            <td>
+              {(n.button_perms || []).length === 0 ? (
+                <span className="muted">—</span>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
+                  {(n.button_perms || []).map((b) => (
+                    <span key={b.code} className="tag ok" title={b.code}>
+                      {b.name} <code style={{ fontSize: 10 }}>({b.code})</code>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </td>
             <td>{n.sort_order}</td>
             <td>{n.visible ? '是' : '否'}</td>
             <td>
@@ -72,7 +90,7 @@ function TreeRows({
 }
 
 export default function SysMenus() {
-  const [tree, setTree] = useState<MenuNode[]>([])
+  const [tree, setTree] = useState<MenuNodeExt[]>([])
   const [flat, setFlat] = useState<FlatMenu[]>([])
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
@@ -89,7 +107,7 @@ export default function SysMenus() {
   })
 
   const load = async () => {
-    const r = await api.get<MenuNode[]>('/api/v1/sys/menus')
+    const r = await api.get<MenuNodeExt[]>('/api/v1/sys/menus')
     setTree(r.data)
     setFlat(flatten(r.data))
   }
@@ -177,14 +195,16 @@ export default function SysMenus() {
           <button className="btn secondary" onClick={() => load()}>刷新</button>
         </div>
         <p className="muted">
-          侧栏<strong>仅</strong>渲染本表树形结构（按用户权限过滤）。分组节点 path 留空；叶子节点填写前端路由 path，并绑定 permission_code。
+          侧栏<strong>仅</strong>渲染本表树（按用户菜单权限过滤）。页面按钮权限来自权限树中挂在该菜单
+          <code>permission_code</code> 下的 <code>btn.*</code>（见「按钮权限」列）；授权请到角色管理勾选。
         </p>
         <table>
           <thead>
             <tr>
               <th>标题</th>
               <th>路径</th>
-              <th>权限码</th>
+              <th>菜单权限码</th>
+              <th>按钮权限（btn.*）</th>
               <th>排序</th>
               <th>可见</th>
               <th>操作</th>
@@ -239,6 +259,11 @@ export default function SysMenus() {
                   <label style={{ margin: 0 }}>可见</label>
                 </div>
               </div>
+              {editing?.button_perms?.length ? (
+                <p className="muted" style={{ fontSize: 12 }}>
+                  本页关联按钮权限：{editing.button_perms.map((b) => `${b.name}(${b.code})`).join('、')}
+                </p>
+              ) : null}
               <div className="modal-actions">
                 <button type="button" className="btn secondary" onClick={() => setOpen(false)}>取消</button>
                 <button type="submit" className="btn">保存</button>
