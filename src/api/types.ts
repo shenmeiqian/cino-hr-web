@@ -104,3 +104,120 @@ export interface Department {
   code: string
   name: string
 }
+
+export interface RecruitingReq {
+  id: number
+  req_no: string
+  position_id?: number | null
+  dept_id?: number | null
+  headcount: number
+  status: string
+  owner_emp_id?: number | null
+  open_date?: string | null
+  close_date?: string | null
+  remark?: string | null
+  created_at?: string | null
+}
+
+export interface Onboarding {
+  id: number
+  employee_id: number
+  plan_start?: string | null
+  actual_start?: string | null
+  buddy_emp_id?: number | null
+  checklist_status: string
+  account_bound: boolean
+  remark?: string | null
+  created_at?: string | null
+}
+
+export interface Contract {
+  id: number
+  employee_id: number
+  contract_no: string
+  contract_type: string
+  start_date?: string | null
+  end_date?: string | null
+  status: string
+  file_url?: string | null
+  remark?: string | null
+  created_at?: string | null
+}
+
+export interface Evidence {
+  id: number
+  ref_type: string
+  ref_id: number
+  employee_id?: number | null
+  title: string
+  file_url?: string | null
+  content?: string | null
+  uploaded_by?: string | null
+  created_at?: string | null
+}
+
+export interface Ticket {
+  id: number
+  ticket_no: string
+  category: string
+  title: string
+  description?: string | null
+  requester_emp_id?: number | null
+  assignee_emp_id?: number | null
+  status: string
+  priority: string
+  created_at?: string | null
+}
+
+export interface EmergencyApproval {
+  id: number
+  approval_no: string
+  employee_id?: number | null
+  reason: string
+  scopes?: string | null
+  status: string
+  approver?: string | null
+  decided_at?: string | null
+  created_at?: string | null
+}
+
+export interface WorkflowNode {
+  id: string
+  type: 'start' | 'approval' | 'condition' | 'end'
+  label: string
+  x: number
+  y: number
+  approverRole?: string
+  config?: Record<string, unknown>
+}
+
+export interface WorkflowEdge {
+  id: string
+  source: string
+  target: string
+  label?: string
+}
+
+export interface WorkflowDefinition {
+  id: number
+  code: string
+  name: string
+  description?: string | null
+  status: string
+  nodes_json: string
+  edges_json: string
+  nodes: WorkflowNode[]
+  edges: WorkflowEdge[]
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export interface WorkflowInstance {
+  id: number
+  definition_id: number
+  business_type: string
+  business_id: number
+  status: string
+  current_node_id?: string | null
+  created_at?: string | null
+}

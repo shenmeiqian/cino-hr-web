@@ -3,10 +3,19 @@ import { ReactNode } from 'react'
 
 const menus = [
   { to: '/', label: '仪表盘' },
+  { to: '/principles', label: '原则说明' },
   { to: '/employees', label: '员工花名册' },
+  { to: '/org', label: '编制/岗位' },
+  { to: '/recruiting', label: '招聘闭环' },
+  { to: '/onboarding', label: '入职单' },
+  { to: '/contracts', label: '合同社保' },
   { to: '/trainings', label: '培训' },
   { to: '/permissions', label: '权限' },
-  { to: '/org', label: '编制/岗位' },
+  { to: '/attendance', label: '考勤异常' },
+  { to: '/evidences', label: 'R2/ISO证据' },
+  { to: '/tickets', label: '人事工单' },
+  { to: '/emergency', label: '紧急用工' },
+  { to: '/workflows', label: '审批流设计' },
   { to: '/kpi', label: 'KPI 跑批' },
 ]
 
