@@ -179,7 +179,7 @@ export default function Workflows() {
         data: {
           label,
           nodeType: type,
-          approverRole: type === 'approval' ? 'HR-MANAGER' : undefined,
+          approverRole: type === 'approval' ? (positions[0]?.code || '') : undefined,
         } satisfies FlowNodeData,
       },
     ])
@@ -217,6 +217,13 @@ export default function Workflows() {
     setOk('')
     try {
       const payload = fromFlow(nodes, edges)
+      const codes = new Set(positions.map((p) => p.code))
+      for (const n of payload.nodes) {
+        if (n.type === 'approval') {
+          if (!n.approverRole) throw new Error(`审批节点 ${n.id} 必须选择本地岗位 code`)
+          if (!codes.has(n.approverRole)) throw new Error(`审批节点 ${n.id} 的岗位 code 无效: ${n.approverRole}`)
+        }
+      }
       await api.put(`/api/v1/workflows/definitions/${selectedId}`, {
         name: nameEdit || selected?.name,
         nodes: payload.nodes,
@@ -432,12 +439,7 @@ export default function Workflows() {
                     </span>
                   </td>
                   <td>
-                    {row.status === 'running' && (
-                      <>
-                        <button className="btn sm" onClick={() => advance(row.id, 'approve')}>同意推进</button>{' '}
-                        <button className="btn sm danger" onClick={() => advance(row.id, 'reject')}>驳回</button>
-                      </>
-                    )}
+                    <span className="muted">请在「待办审批」详情中处理</span>
                   </td>
                 </tr>
               ))}

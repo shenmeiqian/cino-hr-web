@@ -65,6 +65,7 @@ export default function Files() {
       {error && <div className="alert error">{error}</div>}
       {ok && <div className="alert success">{ok}</div>}
       <div className="panel">
+        <p className="muted">存储后端由环境变量 <code>FILE_STORAGE_BACKEND=local|s3|database</code> 控制（默认 local）。S3 需配置 S3_ENDPOINT/S3_BUCKET/S3_ACCESS_KEY/S3_SECRET_KEY。</p>
         <Perm code="btn.files.upload">
           <form className="toolbar" onSubmit={upload}>
             <input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} />

@@ -3,12 +3,15 @@ import { api, getErrorMessage } from '../api/client'
 import { Perm } from '../components/Perm'
 import type { Department, Employee, Position } from '../api/types'
 
+type SysUserBrief = { id: number; username: string; display_name: string; employee_id?: number | null }
+
 const emptyForm = {
   emp_no: '',
   name: '',
   dept_id: '' as string | number,
   position_id: '' as string | number,
   system_account_id: '',
+  sys_user_id: '' as string | number,
   status: 'active',
   is_media_contact: false,
   is_critical_role: false,
@@ -21,6 +24,7 @@ export default function Employees() {
   const [list, setList] = useState<Employee[]>([])
   const [depts, setDepts] = useState<Department[]>([])
   const [positions, setPositions] = useState<Position[]>([])
+  const [users, setUsers] = useState<SysUserBrief[]>([])
   const [form, setForm] = useState({ ...emptyForm })
   const [editingId, setEditingId] = useState<number | null>(null)
   const [open, setOpen] = useState(false)
@@ -36,6 +40,12 @@ export default function Employees() {
     setList(e.data)
     setDepts(d.data)
     setPositions(p.data)
+    try {
+      const u = await api.get<SysUserBrief[]>('/api/v1/sys/users')
+      setUsers(u.data)
+    } catch {
+      setUsers([])
+    }
   }
 
   useEffect(() => {
@@ -60,6 +70,7 @@ export default function Employees() {
       dept_id: row.dept_id ?? '',
       position_id: row.position_id ?? '',
       system_account_id: row.system_account_id || '',
+      sys_user_id: row.sys_user_id ?? '',
       status: row.status,
       is_media_contact: row.is_media_contact,
       is_critical_role: row.is_critical_role,
@@ -80,6 +91,7 @@ export default function Employees() {
       dept_id: form.dept_id === '' ? null : Number(form.dept_id),
       position_id: form.position_id === '' ? null : Number(form.position_id),
       system_account_id: form.system_account_id || null,
+      sys_user_id: form.sys_user_id === '' ? null : Number(form.sys_user_id),
       status: form.status,
       is_media_contact: form.is_media_contact,
       is_critical_role: form.is_critical_role,
@@ -93,9 +105,24 @@ export default function Employees() {
         setOk('员工已创建')
       } else {
         await api.patch(`/api/v1/employees/${editingId}`, payload)
-        setOk('员工已更新')
+        setOk('员工已更新（含 SysUser 双向绑定）')
       }
       setOpen(false)
+      await load()
+    } catch (err) {
+      setError(getErrorMessage(err))
+    }
+  }
+
+  const createUser = async (row: Employee) => {
+    setError('')
+    try {
+      await api.post(`/api/v1/employees/${row.id}/create-sys-user`, {
+        username: `u_${row.emp_no}`.toLowerCase(),
+        password: 'ChangeMe123',
+        role_ids: [],
+      })
+      setOk(`已为 ${row.name} 创建用户 u_${row.emp_no.toLowerCase()} / ChangeMe123 并双向绑定`)
       await load()
     } catch (err) {
       setError(getErrorMessage(err))
@@ -111,6 +138,7 @@ export default function Employees() {
           <Perm code="btn.employees.create"><button className="btn" onClick={openCreate}>新建员工</button></Perm>
           <button className="btn secondary" onClick={() => load().catch((e) => setError(getErrorMessage(e)))}>刷新</button>
         </div>
+        <p className="muted">可绑定本地 <strong>SysUser</strong>（花名册 ↔ 用户双向一致）；岗位角色在登录时按配置合并进有效权限。</p>
         <table>
           <thead>
             <tr>
@@ -118,9 +146,9 @@ export default function Employees() {
               <th>姓名</th>
               <th>部门</th>
               <th>岗位</th>
-              <th>系统账号</th>
+              <th>关联用户</th>
+              <th>综合账号</th>
               <th>关键岗</th>
-              <th>介质接触</th>
               <th>状态</th>
               <th>操作</th>
             </tr>
@@ -132,11 +160,18 @@ export default function Employees() {
                 <td>{row.name}</td>
                 <td>{deptName(row.dept_id)}</td>
                 <td>{posName(row.position_id)}</td>
+                <td>{row.sys_username ? <code>{row.sys_username}</code> : <span className="muted">未绑定</span>}</td>
                 <td>{row.system_account_id || '-'}</td>
                 <td>{row.is_critical_role ? <span className="tag warn">是</span> : '否'}</td>
-                <td>{row.is_media_contact ? <span className="tag blue">是</span> : '否'}</td>
                 <td><span className="tag">{row.status}</span></td>
-                <td><Perm code="btn.employees.edit"><button className="btn secondary sm" onClick={() => openEdit(row)}>编辑</button></Perm></td>
+                <td>
+                  <Perm code="btn.employees.edit">
+                    <button className="btn secondary sm" onClick={() => openEdit(row)}>编辑</button>{' '}
+                    {!row.sys_user_id && (
+                      <button className="btn sm" onClick={() => createUser(row)}>开用户</button>
+                    )}
+                  </Perm>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -170,7 +205,16 @@ export default function Employees() {
                   <label>岗位</label>
                   <select value={form.position_id} onChange={(e) => setForm({ ...form, position_id: e.target.value })}>
                     <option value="">未选择</option>
-                    {positions.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+                    {positions.map((p) => <option key={p.id} value={p.id}>{p.title} ({p.code})</option>)}
+                  </select>
+                </div>
+                <div className="field">
+                  <label>绑定系统用户 SysUser</label>
+                  <select value={form.sys_user_id} onChange={(e) => setForm({ ...form, sys_user_id: e.target.value })}>
+                    <option value="">（解绑 / 未绑定）</option>
+                    {users.map((u) => (
+                      <option key={u.id} value={u.id}>{u.username} — {u.display_name}</option>
+                    ))}
                   </select>
                 </div>
                 <div className="field">

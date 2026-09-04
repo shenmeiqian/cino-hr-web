@@ -43,6 +43,7 @@ export default function Notifications() {
       {error && <div className="alert error">{error}</div>}
       {ok && <div className="alert success">{ok}</div>}
       <div className="panel">
+        <p className="muted">未配置 SMTP/Webhook/SMS 密钥时为 <strong>dry-run</strong> 写日志。环境变量见 API <code>.env.example</code>。</p>
         <Perm code="btn.notifications.send">
           <form onSubmit={send} className="form-grid" style={{ marginBottom: 16 }}>
             <div className="field">

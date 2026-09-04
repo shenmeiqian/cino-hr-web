@@ -5,6 +5,8 @@ export interface Employee {
   dept_id?: number | null
   position_id?: number | null
   system_account_id?: string | null
+  sys_user_id?: number | null
+  sys_username?: string | null
   status: string
   hire_date?: string | null
   leave_date?: string | null
@@ -62,6 +64,8 @@ export interface Position {
   is_universal_temp: boolean
   jd_summary?: string | null
   status: string
+  role_ids?: number[]
+  role_codes?: string[]
   clauses?: Array<{
     id: number
     clause_code: string
@@ -103,6 +107,7 @@ export interface Department {
   id: number
   code: string
   name: string
+  parent_id?: number | null
 }
 
 export interface RecruitingReq {
@@ -112,11 +117,19 @@ export interface RecruitingReq {
   dept_id?: number | null
   headcount: number
   status: string
+  stage?: string
   owner_emp_id?: number | null
   open_date?: string | null
   close_date?: string | null
+  candidate_name?: string | null
+  candidate_phone?: string | null
+  employee_id?: number | null
+  onboarding_id?: number | null
+  contract_id?: number | null
   remark?: string | null
   created_at?: string | null
+  grant_status?: string | null
+  timeline?: Array<{ key: string; label: string; state: string; extra?: string | null }>
 }
 
 export interface Onboarding {

@@ -6,19 +6,22 @@ export default function Dashboard() {
   const [employees, setEmployees] = useState<Employee[]>([])
   const [attendance, setAttendance] = useState<AttendanceException[]>([])
   const [events, setEvents] = useState<PermissionEvent[]>([])
+  const [grantStats, setGrantStats] = useState<Record<string, number>>({})
   const [error, setError] = useState('')
 
   useEffect(() => {
     ;(async () => {
       try {
-        const [e, a, p] = await Promise.all([
+        const [e, a, p, g] = await Promise.all([
           api.get<Employee[]>('/api/v1/employees'),
           api.get<AttendanceException[]>('/api/v1/attendance-exceptions'),
           api.get<PermissionEvent[]>('/api/v1/permissions/events'),
+          api.get<{ grant_stats: Record<string, number> }>('/api/v1/recruiting/stats/grant'),
         ])
         setEmployees(e.data)
         setAttendance(a.data)
         setEvents(p.data)
+        setGrantStats(g.data.grant_stats || {})
       } catch (err) {
         setError(getErrorMessage(err))
       }
@@ -53,14 +56,14 @@ export default function Dashboard() {
           <div className="hint">status = open/pending</div>
         </div>
         <div className="card">
-          <div className="label">开权事件</div>
-          <div className="value">{recentGrants.length}</div>
-          <div className="hint">最近开权记录数（展示区）</div>
+          <div className="label">自动开权统计</div>
+          <div className="value">{(grantStats.granted || 0)}/{(grantStats.ready || 0)}</div>
+          <div className="hint">已开权 / 待开权（培训闸门 {grantStats.pending_train || 0}）</div>
         </div>
       </div>
 
       <div className="panel">
-        <h2>最近开权 / 失败提示</h2>
+        <h2>开权自动统计（无独立开权业务页）</h2>
         {failedGrants.length > 0 ? (
           <table>
             <thead>
