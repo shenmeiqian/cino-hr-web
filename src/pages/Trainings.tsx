@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { api, getErrorMessage } from '../api/client'
+import { Perm } from '../components/Perm'
 import type { Employee, Training } from '../api/types'
 
 const COURSES = [
@@ -93,7 +94,7 @@ export default function Trainings() {
       {ok && <div className="alert success">{ok}</div>}
       <div className="panel">
         <div className="toolbar">
-          <button className="btn" onClick={() => { setOpen(true); setError('') }}>登记培训</button>
+          <Perm code="btn.trainings.create"><button className="btn" onClick={() => { setOpen(true); setError('') }}>登记培训</button></Perm>
           <button className="btn secondary" onClick={() => load().catch((e) => setError(getErrorMessage(e)))}>刷新</button>
         </div>
         <table>
@@ -125,7 +126,7 @@ export default function Trainings() {
                 <td>{row.valid_until || '-'}</td>
                 <td>
                   {row.status !== 'passed' && (
-                    <button className="btn sm" onClick={() => markPassed(row)}>登记通过</button>
+                    <Perm code="btn.trainings.pass"><button className="btn sm" onClick={() => markPassed(row)}>登记通过</button></Perm>
                   )}
                 </td>
               </tr>

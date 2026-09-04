@@ -1,10 +1,13 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { api, getErrorMessage } from '../api/client'
-import type { Employee, Onboarding as OnboardingRow } from '../api/types'
+import type { Employee, Onboarding as OnboardingRow, WorkflowInstance } from '../api/types'
+import { Perm } from '../components/Perm'
+import { SubmitApprovalBtn, WorkflowStatus } from '../components/SubmitApproval'
 
 export default function Onboarding() {
   const [list, setList] = useState<OnboardingRow[]>([])
   const [employees, setEmployees] = useState<Employee[]>([])
+  const [instMap, setInstMap] = useState<Record<number, WorkflowInstance | undefined>>({})
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
   const [open, setOpen] = useState(false)
@@ -25,18 +28,16 @@ export default function Onboarding() {
     ])
     setList(o.data)
     setEmployees(e.data)
-    if (o.data.length === 0 && e.data[0]) {
-      await api.post('/api/v1/onboarding', {
-        employee_id: e.data[0].id,
-        plan_start: new Date().toISOString().slice(0, 10),
-        buddy_emp_id: e.data.find((x) => x.emp_no === 'E2001')?.id ?? null,
-        checklist_status: 'pending',
-        account_bound: false,
-        remark: '演示入职单',
-      })
-      const again = await api.get<OnboardingRow[]>('/api/v1/onboarding')
-      setList(again.data)
-    }
+    const map: Record<number, WorkflowInstance | undefined> = {}
+    await Promise.all(
+      o.data.map(async (row) => {
+        const r = await api.get<WorkflowInstance[]>('/api/v1/workflows/instances', {
+          params: { business_type: 'onboarding', business_id: row.id },
+        })
+        map[row.id] = r.data[0]
+      }),
+    )
+    setInstMap(map)
   }
 
   useEffect(() => {
@@ -52,33 +53,18 @@ export default function Onboarding() {
   const submit = async (ev: FormEvent) => {
     ev.preventDefault()
     setError('')
-    setOk('')
     try {
       await api.post('/api/v1/onboarding', {
         employee_id: Number(form.employee_id),
         plan_start: form.plan_start || null,
         actual_start: form.actual_start || null,
         buddy_emp_id: form.buddy_emp_id === '' ? null : Number(form.buddy_emp_id),
-        checklist_status: form.checklist_status,
-        account_bound: form.account_bound,
+        checklist_status: 'pending',
+        account_bound: false,
         remark: form.remark || null,
       })
-      setOk('入职单已创建')
+      setOk('入职单已创建，请提交审批')
       setOpen(false)
-      await load()
-    } catch (err) {
-      setError(getErrorMessage(err))
-    }
-  }
-
-  const complete = async (row: OnboardingRow) => {
-    try {
-      await api.patch(`/api/v1/onboarding/${row.id}`, {
-        checklist_status: 'done',
-        account_bound: true,
-        actual_start: row.actual_start || new Date().toISOString().slice(0, 10),
-      })
-      setOk(`入职单 #${row.id} 已完成`)
       await load()
     } catch (err) {
       setError(getErrorMessage(err))
@@ -91,20 +77,16 @@ export default function Onboarding() {
       {ok && <div className="alert success">{ok}</div>}
       <div className="panel">
         <div className="toolbar">
-          <button className="btn" onClick={() => { setOpen(true); setError('') }}>新建入职单</button>
+          <Perm code="btn.onboarding.create">
+            <button className="btn" onClick={() => { setOpen(true); setError('') }}>新建入职单</button>
+          </Perm>
           <button className="btn secondary" onClick={() => load().catch((e) => setError(getErrorMessage(e)))}>刷新</button>
         </div>
+        <p className="muted">审批通过后自动将清单置为 done；请在「待办审批」同意/驳回。</p>
         <table>
           <thead>
             <tr>
-              <th>ID</th>
-              <th>员工</th>
-              <th>计划入职</th>
-              <th>实际入职</th>
-              <th>Buddy</th>
-              <th>清单</th>
-              <th>账号绑定</th>
-              <th>操作</th>
+              <th>ID</th><th>员工</th><th>计划入职</th><th>Buddy</th><th>清单</th><th>审批流</th><th>操作</th>
             </tr>
           </thead>
           <tbody>
@@ -113,13 +95,12 @@ export default function Onboarding() {
                 <td>{row.id}</td>
                 <td>{empName(row.employee_id)}</td>
                 <td>{row.plan_start || '-'}</td>
-                <td>{row.actual_start || '-'}</td>
                 <td>{empName(row.buddy_emp_id)}</td>
                 <td><span className={`tag ${row.checklist_status === 'done' ? 'ok' : 'warn'}`}>{row.checklist_status}</span></td>
-                <td>{row.account_bound ? '是' : '否'}</td>
+                <td><WorkflowStatus inst={instMap[row.id] || null} /></td>
                 <td>
-                  {row.checklist_status !== 'done' && (
-                    <button className="btn sm" onClick={() => complete(row)}>完成入职</button>
+                  {!instMap[row.id] && row.checklist_status === 'pending' && (
+                    <SubmitApprovalBtn businessType="onboarding" businessId={row.id} perm="btn.onboarding.submit" onDone={() => { setOk('已提交审批'); load() }} />
                   )}
                 </td>
               </tr>
@@ -128,7 +109,6 @@ export default function Onboarding() {
         </table>
         {list.length === 0 && <div className="empty">暂无入职单</div>}
       </div>
-
       {open && (
         <div className="modal-backdrop" onClick={() => setOpen(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -149,22 +129,7 @@ export default function Onboarding() {
                     {employees.map((e) => <option key={e.id} value={e.id}>{e.name} ({e.emp_no})</option>)}
                   </select>
                 </div>
-                <div className="field">
-                  <label>计划入职日</label>
-                  <input type="date" value={form.plan_start} onChange={(e) => setForm({ ...form, plan_start: e.target.value })} />
-                </div>
-                <div className="field">
-                  <label>清单状态</label>
-                  <select value={form.checklist_status} onChange={(e) => setForm({ ...form, checklist_status: e.target.value })}>
-                    <option value="pending">pending</option>
-                    <option value="in_progress">in_progress</option>
-                    <option value="done">done</option>
-                  </select>
-                </div>
-                <div className="field checkbox">
-                  <input type="checkbox" checked={form.account_bound} onChange={(e) => setForm({ ...form, account_bound: e.target.checked })} />
-                  <label>账号已绑定</label>
-                </div>
+                <div className="field"><label>计划入职日</label><input type="date" value={form.plan_start} onChange={(e) => setForm({ ...form, plan_start: e.target.value })} /></div>
               </div>
               <div className="modal-actions">
                 <button type="button" className="btn secondary" onClick={() => setOpen(false)}>取消</button>

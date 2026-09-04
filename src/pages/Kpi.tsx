@@ -1,5 +1,6 @@
 import { FormEvent, useState } from 'react'
 import { api, getErrorMessage } from '../api/client'
+import { Perm } from '../components/Perm'
 import type { HrManagerScore, KpiRunResult } from '../api/types'
 
 const defaultMonth = new Date().toISOString().slice(0, 7)
@@ -51,7 +52,7 @@ export default function Kpi() {
             <label>月份 (yyyy-mm)</label>
             <input required value={month} onChange={(e) => setMonth(e.target.value)} placeholder="2026-09" />
           </div>
-          <button className="btn" type="submit" disabled={busy} style={{ marginTop: 18 }}>触发跑批</button>
+          <Perm code="btn.kpi.run"><button className="btn" type="submit" disabled={busy} style={{ marginTop: 18 }}>触发跑批</button></Perm>
           <button className="btn secondary" type="button" onClick={loadScores} style={{ marginTop: 18 }}>查询得分</button>
         </form>
         {result && (

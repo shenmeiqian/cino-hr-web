@@ -16,7 +16,8 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { api, getErrorMessage } from '../api/client'
-import type { WorkflowDefinition, WorkflowInstance, WorkflowNode } from '../api/types'
+import type { Position, WorkflowDefinition, WorkflowInstance, WorkflowNode } from '../api/types'
+import { Perm } from '../components/Perm'
 
 type FlowNodeData = {
   label: string
@@ -37,7 +38,7 @@ function FlowNodeView({ data, selected }: NodeProps) {
     <div className={`wf-node wf-${d.nodeType} ${selected ? 'selected' : ''}`}>
       <Handle type="target" position={Position.Left} />
       <div className="wf-node-title">{d.label}</div>
-      {d.approverRole && <div className="wf-node-sub">角色: {d.approverRole}</div>}
+      {d.approverRole && <div className="wf-node-sub">岗位: {d.approverRole}</div>}
       <div className="wf-node-type">{d.nodeType}</div>
       <Handle type="source" position={Position.Right} />
     </div>
@@ -96,6 +97,7 @@ function fromFlow(
 export default function Workflows() {
   const [defs, setDefs] = useState<WorkflowDefinition[]>([])
   const [instances, setInstances] = useState<WorkflowInstance[]>([])
+  const [positions, setPositions] = useState<Position[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
@@ -113,12 +115,14 @@ export default function Workflows() {
   const selected = useMemo(() => defs.find((d) => d.id === selectedId) || null, [defs, selectedId])
 
   const load = async (preferId?: number | null) => {
-    const [d, i] = await Promise.all([
+    const [d, i, pos] = await Promise.all([
       api.get<WorkflowDefinition[]>('/api/v1/workflows/definitions'),
       api.get<WorkflowInstance[]>('/api/v1/workflows/instances'),
+      api.get<Position[]>('/api/v1/positions'),
     ])
     setDefs(d.data)
     setInstances(i.data)
+    setPositions(pos.data)
     const nextId = preferId ?? selectedId ?? d.data[0]?.id ?? null
     setSelectedId(nextId)
     const cur = d.data.find((x) => x.id === nextId)
@@ -175,7 +179,7 @@ export default function Workflows() {
         data: {
           label,
           nodeType: type,
-          approverRole: type === 'approval' ? 'hr' : undefined,
+          approverRole: type === 'approval' ? 'HR-MANAGER' : undefined,
         } satisfies FlowNodeData,
       },
     ])
@@ -306,7 +310,7 @@ export default function Workflows() {
         <div className="wf-layout">
           <div className="wf-left panel">
             <div className="toolbar">
-              <button className="btn" onClick={() => { setCreateOpen(true); setForm({ code: `WF-${Date.now().toString().slice(-6)}`, name: '', description: '' }) }}>新建流程</button>
+              <Perm code="btn.workflows.create"><button className="btn" onClick={() => { setCreateOpen(true); setForm({ code: `WF-${Date.now().toString().slice(-6)}`, name: '', description: '' }) }}>新建流程</button></Perm>
             </div>
             <h2>流程列表</h2>
             <div className="wf-def-list">
@@ -342,9 +346,9 @@ export default function Workflows() {
                 onChange={(e) => setNameEdit(e.target.value)}
                 placeholder="流程名称"
               />
-              <button className="btn" disabled={!selectedId} onClick={() => saveDesigner()}>保存</button>
-              <button className="btn secondary" disabled={!selectedId} onClick={() => publish()}>发布</button>
-              <button className="btn secondary" disabled={!selectedId || selected?.status !== 'published'} onClick={() => startInstance()}>启动实例</button>
+              <Perm code="btn.workflows.save"><button className="btn" disabled={!selectedId} onClick={() => saveDesigner()}>保存</button></Perm>
+              <Perm code="btn.workflows.publish"><button className="btn secondary" disabled={!selectedId} onClick={() => publish()}>发布</button></Perm>
+              <Perm code="btn.workflows.start"><button className="btn secondary" disabled={!selectedId || selected?.status !== 'published'} onClick={() => startInstance()}>启动实例</button></Perm>
             </div>
             <div className="wf-canvas">
               {selectedId ? (
@@ -381,8 +385,13 @@ export default function Workflows() {
                   <input value={nodeLabel} onChange={(e) => setNodeLabel(e.target.value)} />
                 </div>
                 <div className="field">
-                  <label>审批角色 approverRole</label>
-                  <input value={nodeRole} onChange={(e) => setNodeRole(e.target.value)} placeholder="如 hr / dept_manager" />
+                  <label>审批岗位（本地岗位 code）</label>
+                  <select value={nodeRole} onChange={(e) => setNodeRole(e.target.value)}>
+                    <option value="">请选择岗位</option>
+                    {positions.map((p) => (
+                      <option key={p.id} value={p.code}>{p.title} ({p.code})</option>
+                    ))}
+                  </select>
                 </div>
                 <button type="button" className="btn" onClick={applyNodeEdit}>应用</button>
               </div>

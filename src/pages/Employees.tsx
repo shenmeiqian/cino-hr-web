@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { api, getErrorMessage } from '../api/client'
+import { Perm } from '../components/Perm'
 import type { Department, Employee, Position } from '../api/types'
 
 const emptyForm = {
@@ -107,7 +108,7 @@ export default function Employees() {
       {ok && <div className="alert success">{ok}</div>}
       <div className="panel">
         <div className="toolbar">
-          <button className="btn" onClick={openCreate}>新建员工</button>
+          <Perm code="btn.employees.create"><button className="btn" onClick={openCreate}>新建员工</button></Perm>
           <button className="btn secondary" onClick={() => load().catch((e) => setError(getErrorMessage(e)))}>刷新</button>
         </div>
         <table>

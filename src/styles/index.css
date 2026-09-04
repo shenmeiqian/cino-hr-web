@@ -320,3 +320,58 @@ th { color: var(--muted); font-weight: 600; background: #fafafa; }
   .wf-layout { grid-template-columns: 1fr; }
   .wf-canvas { min-height: 420px; }
 }
+
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #0f172a;
+}
+.login-card {
+  width: 380px;
+  padding: 28px;
+}
+.login-card h1 { margin: 0 0 8px; font-size: 22px; }
+.muted { color: #64748b; }
+.perm-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.perm-grid code { font-size: 11px; color: #64748b; margin-left: 4px; }
+
+
+/* Nested sidebar menus */
+.nav-group { margin-bottom: 2px; }
+.nav-group-title {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: rgba(255,255,255,0.85);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  font-size: 13px;
+}
+.nav-group-title:hover { background: var(--sidebar-hover); }
+.nav-group-title.active-group { color: #fff; }
+.nav-caret { opacity: 0.6; font-size: 11px; }
+.nav-children { display: flex; flex-direction: column; gap: 2px; margin-bottom: 6px; }
+.nav-children a { padding-left: 20px; font-size: 13px; }
+
+/* Permission / menu trees */
+.perm-tree {
+  list-style: none;
+  margin: 0 0 8px;
+  padding: 0;
+}
+.perm-tree li { margin: 6px 0; }
+.perm-tree .checkbox { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.perm-tree code { font-size: 11px; color: #64748b; }
