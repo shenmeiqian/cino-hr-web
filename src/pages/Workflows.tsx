@@ -16,7 +16,7 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { api, getErrorMessage } from '../api/client'
-import type { Position, WorkflowDefinition, WorkflowInstance, WorkflowNode } from '../api/types'
+import type { Position as HrPosition, WorkflowDefinition, WorkflowInstance, WorkflowNode } from '../api/types'
 import { Perm } from '../components/Perm'
 
 type FlowNodeData = {
@@ -97,7 +97,7 @@ function fromFlow(
 export default function Workflows() {
   const [defs, setDefs] = useState<WorkflowDefinition[]>([])
   const [instances, setInstances] = useState<WorkflowInstance[]>([])
-  const [positions, setPositions] = useState<Position[]>([])
+  const [positions, setPositions] = useState<HrPosition[]>([])
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [error, setError] = useState('')
   const [ok, setOk] = useState('')
@@ -118,7 +118,7 @@ export default function Workflows() {
     const [d, i, pos] = await Promise.all([
       api.get<WorkflowDefinition[]>('/api/v1/workflows/definitions'),
       api.get<WorkflowInstance[]>('/api/v1/workflows/instances'),
-      api.get<Position[]>('/api/v1/positions'),
+      api.get<HrPosition[]>('/api/v1/positions'),
     ])
     setDefs(d.data)
     setInstances(i.data)
