@@ -52,3 +52,36 @@ export function getErrorMessage(err: unknown): string {
   }
   return String(err)
 }
+
+/** 404 / 405 / 501 — backend route not implemented yet. */
+export function isMissingApi(err: unknown): boolean {
+  if (!axios.isAxiosError(err)) return false
+  const s = err.response?.status
+  return s === 404 || s === 405 || s === 501
+}
+
+/** User-facing error that names the method+path when the V2.2 API is not ready. */
+export function describeRequestError(err: unknown, method: string, path: string): string {
+  if (axios.isAxiosError(err)) {
+    if (!err.response) {
+      return `无法连接后端 ${api.defaults.baseURL}（${method} ${path}）。请确认 FastAPI 已启动（默认 http://127.0.0.1:8000）。`
+    }
+    if (isMissingApi(err)) {
+      const detail = getErrorMessage(err)
+      return `接口尚未就绪：${method} ${path}（HTTP ${err.response.status}）。页面已按约定路径调用，后端补齐后即可使用。${detail ? ` 详情：${detail}` : ''}`
+    }
+    return getErrorMessage(err)
+  }
+  return String(err)
+}
+
+export function unwrapList<T = unknown>(data: unknown): T[] {
+  if (Array.isArray(data)) return data as T[]
+  if (data && typeof data === 'object') {
+    const o = data as Record<string, unknown>
+    for (const k of ['items', 'data', 'results', 'users', 'revokes', 'callbacks', 'logs', 'flags', 'scores']) {
+      if (Array.isArray(o[k])) return o[k] as T[]
+    }
+  }
+  return []
+}

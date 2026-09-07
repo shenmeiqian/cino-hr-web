@@ -2,6 +2,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { ReactNode, useEffect, useMemo, useState } from 'react'
 import { api } from '../api/client'
 import { useAuth } from '../auth/AuthContext'
+import { MENU_PERM } from '../config/rbac'
 
 export type MenuNode = {
   id: number
@@ -13,6 +14,40 @@ export type MenuNode = {
   permission_code: string
   visible: boolean
   children?: MenuNode[]
+}
+
+function menusHavePath(nodes: MenuNode[], path: string): boolean {
+  for (const n of nodes) {
+    if (n.path === path) return true
+    if (n.children && menusHavePath(n.children, path)) return true
+  }
+  return false
+}
+
+/** When backend seed lags, still surface V2.2 pages the user is allowed to open. */
+function mergeFallbackMenus(apiMenus: MenuNode[], hasPerm: (code: string) => boolean): MenuNode[] {
+  const extras: MenuNode[] = []
+  const candidates: MenuNode[] = [
+    { id: -9100, parent_id: -9099, title: '人事KPI看板', path: '/kpi', sort_order: 10, permission_code: MENU_PERM.kpi, visible: true },
+    { id: -9101, parent_id: -9099, title: '对接中心', path: '/integration', sort_order: 20, permission_code: MENU_PERM.integration, visible: true },
+    { id: -9102, parent_id: -9099, title: '对接说明', path: '/integration-guide', sort_order: 30, permission_code: MENU_PERM.integrationGuide, visible: true },
+  ]
+  for (const item of candidates) {
+    if (!item.path) continue
+    if (menusHavePath(apiMenus, item.path)) continue
+    if (!hasPerm(item.permission_code)) continue
+    extras.push(item)
+  }
+  if (extras.length === 0) return apiMenus
+  const group: MenuNode = {
+    id: -9099,
+    title: 'V2.2 考核与对接',
+    sort_order: 85,
+    permission_code: MENU_PERM.integration,
+    visible: true,
+    children: extras,
+  }
+  return [...apiMenus, group]
 }
 
 function pathActive(pathname: string, path?: string | null): boolean {
@@ -76,15 +111,15 @@ function NavNode({ node, depth = 0 }: { node: MenuNode; depth?: number }) {
 export default function Layout({ title, children }: { title: string; children: ReactNode }) {
   const loc = useLocation()
   const nav = useNavigate()
-  const { user, logout, permissions } = useAuth()
+  const { user, logout, permissions, hasPerm } = useAuth()
   const [menus, setMenus] = useState<MenuNode[]>([])
 
   useEffect(() => {
     api
       .get<MenuNode[]>('/api/v1/sys/menus/tree')
-      .then((r) => setMenus(r.data || []))
-      .catch(() => setMenus([]))
-  }, [user, permissions])
+      .then((r) => setMenus(mergeFallbackMenus(r.data || [], hasPerm)))
+      .catch(() => setMenus(mergeFallbackMenus([], hasPerm)))
+  }, [user, permissions, hasPerm])
 
   const flatTitle = useMemo(() => {
     const walk = (nodes: MenuNode[]): string | null => {

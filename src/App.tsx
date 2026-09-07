@@ -9,6 +9,8 @@ import Trainings from './pages/Trainings'
 import Permissions from './pages/Permissions'
 import Org from './pages/Org'
 import Kpi from './pages/Kpi'
+import Integration from './pages/Integration'
+import IntegrationGuide from './pages/IntegrationGuide'
 import Principles from './pages/Principles'
 import Recruiting from './pages/Recruiting'
 import Onboarding from './pages/Onboarding'
@@ -35,7 +37,9 @@ const titles: Record<string, string> = {
   '/trainings': '培训管理',
   '/permissions': '开权审计日志',
   '/org': '编制与岗位',
-  '/kpi': '人事 KPI',
+  '/kpi': '人事KPI看板',
+  '/integration': '对接中心',
+  '/integration-guide': '对接说明',
   '/recruiting': '招聘入职闭环',
   '/onboarding': '入职单',
   '/contracts': '合同社保',
@@ -61,6 +65,8 @@ const menuPerm: Record<string, string> = {
   '/permissions': 'menu.permissions',
   '/org': 'menu.org',
   '/kpi': 'menu.kpi',
+  '/integration': 'menu.integration',
+  '/integration-guide': 'menu.integration.guide',
   '/recruiting': 'menu.recruiting',
   '/onboarding': 'menu.onboarding',
   '/contracts': 'menu.contracts',
@@ -106,6 +112,8 @@ export default function App() {
         <Route path="/permissions" element={<Guard path="/permissions" el={<Permissions />} />} />
         <Route path="/org" element={<Guard path="/org" el={<Org />} />} />
         <Route path="/kpi" element={<Guard path="/kpi" el={<Kpi />} />} />
+        <Route path="/integration" element={<Guard path="/integration" el={<Integration />} />} />
+        <Route path="/integration-guide" element={<Guard path="/integration-guide" el={<IntegrationGuide />} />} />
         <Route path="/recruiting" element={<Guard path="/recruiting" el={<Recruiting />} />} />
         <Route path="/onboarding" element={<Guard path="/onboarding" el={<Onboarding />} />} />
         <Route path="/contracts" element={<Guard path="/contracts" el={<Contracts />} />} />
