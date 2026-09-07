@@ -1,7 +1,7 @@
 import { FormEvent, useEffect, useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
-import { api, getErrorMessage } from '../api/client'
+import { API_BASE_URL, api, getErrorMessage } from '../api/client'
 
 export default function Login() {
   const { token, login, ready } = useAuth()
@@ -45,7 +45,7 @@ export default function Login() {
         </form>
         <div style={{ marginTop: 16 }}>
           {sso?.configured ? (
-            <a className="btn secondary" style={{ display: 'block', textAlign: 'center' }} href="http://127.0.0.1:8000/api/v1/auth/sso/login">
+            <a className="btn secondary" style={{ display: 'block', textAlign: 'center' }} href={`${API_BASE_URL}/api/v1/auth/sso/login`}>
               SSO 登录
             </a>
           ) : (
