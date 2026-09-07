@@ -1,6 +1,6 @@
 # CINO 人事管理前端（cino-hr-web）
 
-面向 `cino-hr-api` 的中文管理后台（Vite + React + TypeScript），作为 **V2.2 人事考核 + 对接综合系统 3.0** 的 HR Web。
+面向 [cino-hr-api](https://github.com/shenmeiqian/cino-hr-api) 的中文管理后台（Vite + React + TypeScript），作为 **V2.2 人事考核 + 对接综合系统 3.0** 的 HR Web。
 
 ## 功能
 
@@ -11,25 +11,33 @@
 - **对接中心** `/integration`：同步状态、粘贴/导入 3.0 用户 JSON、开权前培训校验、待停权、权限回调日志
 - **对接说明** `/integration-guide`：HR vs 3.0 权责与跑批时间（次月 1 日 02:00）
 
-## 启动
+## 本地开发
+
+API 基址通过 `VITE_API_BASE_URL` 配置。未设置时，Vite 开发模式默认 `http://127.0.0.1:8000`。生产 / Docker 构建默认空字符串（同源，由 nginx 把 `/api/` 反代到后端）。后端未启动时页面会提示无法连接。
 
 ```bash
-# 后端
-cd /workspace/cino-hr-api
+# 后端（cino-hr-api）
 pip install -r requirements.txt
 python -m app.seed
 uvicorn app.main:app --host 0.0.0.0 --port 8000
 
 # 前端
-cd /workspace/cino-hr-web
-bun install   # 或 npm install
-bun run dev   # 或 npm run dev
+npm install   # 或 bun install
+npm run dev   # 或 bun run dev
 # 浏览器打开 http://127.0.0.1:5173
 ```
 
-演示账号：`admin/admin123` · `hr/hr123` · `viewer/viewer123`。
+可选：复制 `.env.example` 为 `.env` 并填写 `VITE_API_BASE_URL`。
 
-API 基址：`http://127.0.0.1:8000`（Axios + Bearer；后端未启动时页面会提示无法连接）。
+## 登录（演示账号）
+
+打开登录页后使用：
+
+| 用户名 | 密码 | 说明 |
+|--------|------|------|
+| `admin` | `admin123` | 管理员 |
+| `hr` | `hr123` | 人事 |
+| `viewer` | `viewer123` | 只读 |
 
 ## V2.2 菜单 / 按钮权限码（RBAC seed）
 
@@ -75,6 +83,53 @@ API 基址：`http://127.0.0.1:8000`（Axios + Bearer；后端未启动时页面
 
 计分卡条款 3.1–3.12（权重合计 100，熔断项：3.7 / 3.8 / 3.11）定义见 `src/config/kpiScorecard.ts`。
 
+## Docker
+
+镜像为多阶段构建：Node 编译 `dist`，再用 `nginx:alpine` 提供静态站，并带 SPA `try_files` 回退。浏览器请求 `/api/` 时，nginx 反代到 `API_UPSTREAM`（默认 `cino-hr-api:8000`）。
+
+### 仅启动前端
+
+```bash
+docker compose up --build
+# 打开 http://127.0.0.1:5173  （宿主机 5173 → 容器 80）
+```
+
+或：
+
+```bash
+docker build -t cino-hr-web .
+docker run --rm -p 5173:80 cino-hr-web
+```
+
+构建参数 `VITE_API_BASE_URL` 默认空（同源 + nginx 反代）。若浏览器要直连已发布的 API，而不是走反代：
+
+```bash
+docker compose build --build-arg VITE_API_BASE_URL=http://127.0.0.1:8000
+docker compose up
+```
+
+### 与 cino-hr-api 一起跑
+
+API 仓库：[https://github.com/shenmeiqian/cino-hr-api](https://github.com/shenmeiqian/cino-hr-api)
+
+推荐用 **共享 Docker 网络**，让本仓库的 nginx 用服务名访问 API：
+
+```bash
+docker network create cino-hr
+```
+
+1. 在 **API** compose 中把 API 服务挂到外部网络 `cino-hr`，服务名使用 `cino-hr-api`（或 `api`，端口 **8000**）。
+2. 在本仓库 `docker-compose.yml` 中取消注释 `networks` 段。
+3. 若 API 服务名为 `api`，设置 `API_UPSTREAM=api:8000`：
+
+```bash
+API_UPSTREAM=api:8000 docker compose up --build
+```
+
+也可不共用网络、不走反代：API 在宿主机 `8000` 端口发布时，按上一节用 `VITE_API_BASE_URL=http://127.0.0.1:8000` 重新构建前端（注意浏览器访问的是**用户电脑**上的 8000，不是容器内的 localhost）。
+
+容器启动后，打开 `http://127.0.0.1:5173`，用 **admin / admin123** 登录。
+
 ## 目录
 
 ```
@@ -85,4 +140,7 @@ src/
   components/  侧边栏、Perm 按钮包装
   pages/       各业务页（含 Integration / Kpi / IntegrationGuide）
   styles/      全局样式
+Dockerfile          多阶段构建（npm ci + nginx）
+docker-compose.yml  仅 web；文档中说明如何对接 API
+nginx.conf          监听 80、SPA 回退、/api/ 反代
 ```

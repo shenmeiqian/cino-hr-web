@@ -2,6 +2,17 @@ import axios from 'axios'
 
 const TOKEN_KEY = 'cino_hr_token'
 
+/** Same-origin when empty (Docker/nginx `/api/` proxy). Local Vite defaults to the API on :8000. */
+function resolveApiBaseUrl(): string {
+  const fromEnv = import.meta.env.VITE_API_BASE_URL
+  if (fromEnv !== undefined) {
+    return String(fromEnv).replace(/\/$/, '')
+  }
+  return import.meta.env.DEV ? 'http://127.0.0.1:8000' : ''
+}
+
+export const API_BASE_URL = resolveApiBaseUrl()
+
 export function getStoredToken(): string | null {
   return localStorage.getItem(TOKEN_KEY)
 }
@@ -18,7 +29,7 @@ export function clearAuthToken() {
 }
 
 export const api = axios.create({
-  baseURL: 'http://127.0.0.1:8000',
+  baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -64,7 +75,8 @@ export function isMissingApi(err: unknown): boolean {
 export function describeRequestError(err: unknown, method: string, path: string): string {
   if (axios.isAxiosError(err)) {
     if (!err.response) {
-      return `无法连接后端 ${api.defaults.baseURL}（${method} ${path}）。请确认 FastAPI 已启动（默认 http://127.0.0.1:8000）。`
+      const base = api.defaults.baseURL || '同源 /api（nginx 反代）'
+      return `无法连接后端 ${base}（${method} ${path}）。请确认 FastAPI 已启动（本地默认 http://127.0.0.1:8000）。`
     }
     if (isMissingApi(err)) {
       const detail = getErrorMessage(err)

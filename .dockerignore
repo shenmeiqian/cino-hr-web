@@ -1,0 +1,15 @@
+node_modules
+dist
+.git
+.github
+.gitignore
+.cursor
+*.md
+.env
+.env.*
+!.env.example
+.DS_Store
+*.local
+tsconfig.tsbuildinfo
+bun.lock
+docker-compose*.yml

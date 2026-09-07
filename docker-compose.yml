@@ -1,0 +1,29 @@
+# Frontend only. Pair with the API compose from:
+#   https://github.com/shenmeiqian/cino-hr-api
+#
+# Shared-network example (create once: docker network create cino-hr):
+#   1. In the API compose, attach service `cino-hr-api` (or `api`) to network `cino-hr`.
+#   2. Uncomment the networks blocks below.
+#   3. If the API service is named `api`, set API_UPSTREAM=api:8000.
+#
+# Direct URL (no proxy): rebuild with
+#   docker compose build --build-arg VITE_API_BASE_URL=http://localhost:8000
+
+services:
+  web:
+    build:
+      context: .
+      args:
+        VITE_API_BASE_URL: ""
+    image: cino-hr-web:local
+    container_name: cino-hr-web
+    ports:
+      - "5173:80"
+    environment:
+      API_UPSTREAM: cino-hr-api:8000
+    # networks:
+    #   - cino-hr
+
+# networks:
+#   cino-hr:
+#     external: true
