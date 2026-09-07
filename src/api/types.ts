@@ -94,6 +94,17 @@ export interface HrManagerScore {
   weight: number
   weighted_score: number
   detail?: string | null
+  is_meltdown?: boolean | null
+  melt_down?: boolean | null
+}
+
+export interface MeltdownFlag {
+  code?: string
+  kpi_code?: string
+  name?: string
+  reason?: string
+  detail?: string
+  triggered?: boolean
 }
 
 export interface KpiRunResult {
@@ -101,6 +112,99 @@ export interface KpiRunResult {
   batch_id: number
   scores: HrManagerScore[]
   total_weighted_score: number
+  meltdown?: boolean
+  melt_down?: boolean
+  meltdown_flags?: MeltdownFlag[]
+  circuit_breakers?: MeltdownFlag[]
+}
+
+export interface KpiScorecard {
+  year_month?: string
+  total?: number
+  total_score?: number
+  total_weighted_score?: number
+  max?: number
+  items?: HrManagerScore[]
+  scores?: HrManagerScore[]
+  meltdown?: boolean
+  melt_down?: boolean
+  meltdown_flags?: MeltdownFlag[]
+}
+
+export interface IntegrationStatus {
+  connected?: boolean
+  source?: string
+  last_sync_at?: string | null
+  last_sync_status?: string | null
+  users_synced?: number
+  users_failed?: number
+  pending_revokes?: number
+  message?: string
+  [key: string]: unknown
+}
+
+export interface IntegrationSyncResult {
+  created?: number
+  updated?: number
+  failed?: number
+  skipped?: number
+  total?: number
+  message?: string
+  errors?: Array<string | { emp_no?: string; message?: string }>
+  [key: string]: unknown
+}
+
+export interface TrainingValidation {
+  passed?: boolean
+  ok?: boolean
+  employee_id?: number
+  missing?: Array<string | { course_code?: string; course_name?: string; reason?: string }>
+  courses?: Array<{ course_code?: string; course_name?: string; status?: string; valid_until?: string | null }>
+  reason?: string
+  message?: string
+  [key: string]: unknown
+}
+
+export interface PendingRevoke {
+  id?: number
+  employee_id?: number
+  emp_no?: string
+  name?: string
+  event_type?: string
+  scopes?: string
+  status?: string
+  trigger?: string | null
+  due_at?: string | null
+  reason?: string | null
+  created_at?: string | null
+  [key: string]: unknown
+}
+
+export interface PermissionCallbackLog {
+  id?: number
+  created_at?: string | null
+  direction?: string
+  event_type?: string
+  status?: string
+  employee_id?: number
+  system_account_id?: string
+  payload?: unknown
+  message?: string
+  [key: string]: unknown
+}
+
+export interface System3User {
+  system_account_id?: string
+  account_id?: string
+  emp_no?: string
+  employee_no?: string
+  name?: string
+  display_name?: string
+  dept_code?: string
+  email?: string
+  status?: string
+  scopes?: string[] | string
+  [key: string]: unknown
 }
 
 export interface Department {
